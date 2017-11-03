@@ -1,0 +1,85 @@
+@startuml
+Class Usuario{
+    str nome;
+    int idade;
+    str data_nascimento;
+    str Profissao;
+    list amigos;
+
+    Fazer_amigo(nome)
+    set_usuario()
+    get_amigo()
+    excluir_amigo(amigo_destino)
+    Fazer_login()
+    Gerir_Conta()
+    Postar_grupo()
+    Postar_status()
+    Atualizar_feed()
+}
+Administrador --|> Usuario
+
+Class Administrador{
+        criar_grupo()
+        recrutar_membro(Usuario)
+        get_perfil(nome)
+        gerir_grupo()
+        set_grupo()
+        manter_membro()
+        publicar(evento)
+
+
+            }
+Class Sistema{
+        list cadastrados;
+        str empresa;
+        float versao;
+        object desenvolvedores;
+        object parcerias;
+
+    Cadastrar_Usuario(email,senha)
+    verificar_existencia(Usuario)
+    atualizar_versao(versao)
+    verificar_seguranca()
+    ajudar_cliente(problema)
+}
+class Conta{
+    str email;
+    str senha;
+    Usuario associado;
+    str idioma;
+
+    confg_conta()
+    salvar_item()
+    get_pagina(nome)
+    atualizar_status()
+    get_conversa(amigo)
+    manter_conversa(amigo)
+}
+
+Class Grupo{
+    Usuario administrador;
+    str nome;
+    list membros;
+    str evento;
+    publicacao_privada;
+    descricao;
+    notificacao;
+    fotos;
+    video;
+
+    adicionar_arquivo(arquivo)
+    fixar_atalhos()
+    publicar_eventos()
+    escrever_publicacao()
+    definir_publico()
+    adicionar_fotos(foto)
+    adicionar_video(video)
+    realizar_enquete(assunto)
+
+}
+
+Conta "n"-"    1" Sistema
+Usuario "1"--" 1..n" Conta
+Administrador "1"-- "1. . n" Grupo
+
+@enduml
