@@ -1,5 +1,6 @@
 from tratamentos import *
 import psycopg2
+import time
 
 class Usuario:
     def __init__(self,nome,idade,profissao):
@@ -17,15 +18,16 @@ class Usuario:
         global conta
         email = input('SEU EMAIL:')
         senha = input("escolha uma senha:")
-        conta = Conta(email, senha,usr)
+        conta = Conta(email, senha,)
         return conta
 
     def logar(self, email, senha):
+
         if email in sistema.cadastrados.keys():
             if senha in sistema.cadastrados.values():
                 conta.logado.append(email)
                 conta.login = True
-                print("Usuário logado !")
+                print("Usuário logado com SUCESSO!")
 
             else:
                 print("senha incorreta")
@@ -90,7 +92,7 @@ class Usuario:
 
 
 class Conta:
-    def __init__(self,email,senha,usr):
+    def __init__(self,email,senha):
         self.email  = email
         self.senha = senha
         self.amigos = []
@@ -103,12 +105,32 @@ class Conta:
     def get_dado_email(self):
         return self.email
 
-    def add_friend(self):
-        amg= input("procurar nick:")
-        if amg==usr.nome:
-            self.amigos.append(usr)
-            print(self.amigos)
+    def Buscar_amigos(self,nome):
+        # necessário cursor_factory=psycopg2.extras.DictCursor quando se quer trabalhar com a tupla em formato de dicionário.
+        # Ex.: tupla['nm_conta']
+        cursor = sistema.conexao.cursor()
+        cursor.execute("SELECT * FROM cadastrados WHERE nome like %'(%s)'%",(nome))
+        for tupla in cursor.fetchall():
+            print('Nome: ' + str(tupla[1]) + ',', 'Email: ' + str(tupla[3]))
+        cursor.close()
+        sistema.cursor.commit()
 
+    def Adicionar_amigos(self,email):
+        cursor = sistema.conexao.cursor()
+        cursor.execute('SELECT * from usuario')
+        tupla = cursor.fetchall()
+        amigo = None
+        for e in tupla:
+            try:
+                if e[1] == email:
+                    amigo = e
+                    cursor.execute('INSERT INTO amigos(meu_email, nome, email, idade) VALUES (%s, %s, %s, %s)', (conta.email, amigo[0], amigo[1], amigo[2]))
+            except :
+                if amigo == None:
+                    print('Dados do amigo inválidos !')
+
+        cursor.close()
+        sistema.conexao.commit()
 
 class Grupo:
     def __init__(self,nome, categoria,admin=None):
@@ -154,10 +176,16 @@ class Sistema:
         return str(self.cadastrados)
 
     def Cadastrar_Usuario(self,nome,idade,profissao):
+        usr_existe = sistema.verifica_existe()
+
         if idade<=15:
             raise IdadeMenorException('Caracteres de idade inválidos')
         if len(nome)>=30:
             raise  NomeMaiorexception('Nome muito grande, tente denovo !')
+
+        if usr_existe==nome:
+            raise UsuarioExistenteException('Usuario já é membro !')
+
         cursor = self.conexao.cursor()
         cursor.execute(
             'INSERT INTO usuario(nome, idade,profissao) VALUES (%s, %s, %s)',
@@ -176,8 +204,8 @@ class Sistema:
 
         email = conta.get_dado_email()
 
-        conta_existe = self.verifica_existe(email)
-        if conta_existe:
+        conta_existe = self.verifica_existe()
+        if conta_existe==email:
             raise ContaExistenteException('Esta conta já está cadastrada')
 
         cursor = self.conexao.cursor()
@@ -193,7 +221,6 @@ class Sistema:
         self.conexao.commit()
 
     def get_cadastrados(self):
-        print("CADASTRADOS:\n")
         cursor = self.conexao.cursor()
         cursor.execute('SELECT nome FROM usuario')
         while True:
@@ -201,7 +228,7 @@ class Sistema:
 
             if not tupla:
                 break
-            print(tupla[0])
+            return(tupla[0])
         cursor.close()
         self.conexao.commit()
             #return (self.cadastrados)
@@ -246,7 +273,7 @@ class Sistema:
         if senha_antig == self.cadastrados[email]:
             senha_nova = input("informe a senha nova:")
             cursor= self.conexao.cursor()
-            cursor.execute('UPDATE conta SET senha=(%s) WHERE senha=(%s)',(senha_nova,senha_antig))
+            cursor.execute('UPDATE conta SET senha=(%s) WHERE email=(%s)',(senha_nova,email))
             cursor.close()
             self.conexao.commit()
             self.cadastrados[email] = senha_nova
@@ -255,14 +282,21 @@ class Sistema:
         else:
             print("dados inválidos!")
 
-    def verifica_existe(self,email):
-        '''existe = usr.logar(email,senha)
-        if existe:
-            print("Bem vindo de volta !")
-        else:
-            print("CAIU NO ELSE")'''
-        if email in self.cadastrados.keys():
-            return conta
+    def verifica_existe(self):
+
+        cursor = self.conexao.cursor()
+        cursor.execute('SELECT email FROM conta')
+        while True:
+            tupla = cursor.fetchone()  # extrai elemento
+
+            if not tupla:
+                break
+            return (tupla[0])
+        cursor.close()
+        self.conexao.commit()
+            # return (self.cadastrados)
+        #if email in self.cadastrados.keys():
+            #return conta
 
     def main_conta(self):
         while True:
@@ -270,7 +304,7 @@ class Sistema:
 
             print('\tr - Remover conta')
             print('\ti - atualizar Informacao')
-            #print("\ts - atualizar Senha")
+            print("\tb - Buscar Amigo")
             print('\to - Sair(o)')
             opcao = input("sua escolha:")
             if opcao == 'r':
@@ -293,10 +327,22 @@ class Sistema:
                     novo_nome = input("Como você quer ser chamado?")
                     usr.set_nome(novo_nome)
                     print("VOCÊ AGORA É CONHECIDO COMO ",usr.nome)
-
+                    time.sleep(3)
                 if info=='i':
                     nova_idade = int(input("nova idade:"))
                     usr.set_idade(nova_idade)
+
+            if opcao=='b':
+                try:
+                    nome = input("Quem tu desejas adicionar?")
+                    sistema.get_cadastrados()
+                    op = input("quer adicionar como amigo?[s/n]")
+                    if op == 's':
+                        conta.Adicionar_amigos(email)
+                        print("Amigo adicionado !")
+                        time.sleep(2)
+                except:
+                    print("Email não existente !\n")
 
             if opcao=='o':
                 conta.login = False
@@ -326,17 +372,22 @@ class Sistema:
 
                 except IdadeMenorException as m:
                     print("Erro:",m)
+                    time.sleep(3)
                 except ContaExistenteException as c:
                     print("Erro:",c)
+                    time.sleep(3)
                 except NomeMaiorexception as nm:
                     print("ERRO:",nm)
+                    time.sleep(3)
+                except UsuarioExistenteException as usr_e:
+                    print("ERRO: ",usr_e)
 
             if esc=="e":
 
                 email = input("Precisamos do seu email para acessar os serviços:\n")
                 senha = input("Por favor, informe sua senha:\n")  ##colocar variáveis no sistema
                 usr.logar(email,senha)
-                self.verifica_existe(email)
+                self.verifica_existe()
                 self.main_conta()
 
             if esc=="s":
