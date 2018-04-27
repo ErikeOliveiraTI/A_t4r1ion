@@ -1,19 +1,8 @@
-
-from datetime import datetime
-hoje = datetime.now()
-
+from datetime import *
 class Mensagem:
-    def __init__(self,remetente,destino):
-        self.envio = remetente
-        self.remete = destino
-        self.conteudo = []
-        self.data_envio = hoje.date()
-        self.hora = str(hoje.hour)+"h"+":"+str(hoje.minute)+"m"+":"+str(hoje.second)+"s\n"
+    def __init__(self,escrito, email_r, email_d):
+        self.escrito=escrito
+        self.email_remetente=email_r
+        self.email_destino=email_d
+        self.data=datetime.today()
 
-msg = Mensagem("Diego","Jesus")
-
-'''
-print("remetente:",msg.remete)
-print("\tHora:"+msg.hora)
-print("\tDia:",msg.data_envio)
-'''
